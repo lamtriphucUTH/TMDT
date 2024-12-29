@@ -3,33 +3,30 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import logoApp from '../assets/image/logo192.png';
-import { useLocation, NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useContext } from 'react';
-import { UserContext } from '../context/UserContext';
-import { useState } from 'react';
 import { useEffect } from 'react';
-import { use } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { handleLogoutRedux } from '../redux/actions/userAction';
 
 const Header = (porps) => {
 
-    const { logout, user } = useContext(UserContext);
-
-    const location = useLocation();
-
-    const [hideHeader, setHideHeader] = useState(false);
-
-    // useEffect(() => {
-    //     if (window.location.pathname === '/login') {
-    //         setHideHeader(true);
-    //     }
-    // }, [])
     const navigate = useNavigate();
+
+    const user = useSelector(state => state.user.account);
+
+    const dispatch = useDispatch();
     const handleLogout = () => {
-        logout();
-        navigate("/");
-        toast.success("Logout success!");
+        dispatch(handleLogoutRedux());
+
     }
+
+    useEffect(() => {
+        if (user && !user.auth === false && window.location.pathname !== '/login') {
+            navigate("/");
+            toast.success("Log out success!");
+        }
+    }, [user]);
 
     return (<>
         <Navbar expand="lg" className="bg-body-tertiary" >
@@ -54,6 +51,7 @@ const Header = (porps) => {
 
                             </Nav>
                             <Nav>
+                                {!user && <NavLink to="/register" className="nav-link" > Register</NavLink>}
                                 {user && user.email && < span className="nav-link"  > Wellcome {user.email}</span>}
                                 <NavDropdown title="Settings" >
                                     {user && user.auth === true

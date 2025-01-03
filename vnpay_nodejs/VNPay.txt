@@ -1,0 +1,4 @@
+Thông tin cấu hình:
+Terminal ID ): VI5HB68A
+
+Secret Key (vnp_HashSecret): K0RTQXVLHK8KHSJJZY9S40GEESWQJKVK

@@ -1,8 +1,6 @@
 const User = require("../model/UserModel");
 const bcrypt = require("bcrypt");
-const { generalAccessToken } = require("./JwtService");
-const { updateUser, getAllUser } = require("../controllers/UserController");
-const { JsonWebTokenError } = require("jsonwebtoken");
+const { generalAccessToken, generalRefreshToken } = require("./JwtService");
 
 const createUser = (newUser) => {
   return new Promise(async (resolve, reject) => {
@@ -13,23 +11,22 @@ const createUser = (newUser) => {
       });
       if (checkUser !== null) {
         resolve({
-          status: "OK",
-          message: "The email is already",
+          status: "ERR",
+          message: "The email is already ",
         });
       }
-      // mã hóa pass
       const hash = bcrypt.hashSync(password, 10);
-      const createUser = await User.create({
+      const createdUser = await User.create({
         name,
         email,
         password: hash,
         phone,
       });
-      if (createUser) {
+      if (createdUser) {
         resolve({
           status: "OK",
-          message: "Create user successfully",
-          data: createUser,
+          message: "SUCCESS",
+          data: createdUser,
         });
       }
     } catch (e) {
@@ -47,23 +44,21 @@ const loginUser = (userLogin) => {
       });
       if (checkUser === null) {
         resolve({
-          status: "OK",
+          status: "ERR",
           message: "The user is not defined",
         });
       }
-      const comperePassword = bcrypt.compareSync(password, checkUser.password);
-
-      if (!comperePassword) {
+      const comparePassword = bcrypt.compareSync(password, checkUser.password);
+      if (!comparePassword) {
         resolve({
-          status: "OK",
-          message: "The password or is incorrect",
+          status: "ERR",
+          message: "The user password is not correct",
         });
       }
       const access_token = await generalAccessToken({
         id: checkUser.id,
         isAdmin: checkUser.isAdmin,
       });
-
       const refresh_token = await generalRefreshToken({
         id: checkUser.id,
         isAdmin: checkUser.isAdmin,
@@ -93,11 +88,11 @@ const updateUser = (id, data) => {
           message: "The user is not defined",
         });
       }
-      const updateUser = await User.findOneAndUpdate(id, data, { new: true });
+      const updatedUser = await User.findByIdAndUpdate(id, data, { new: true });
       resolve({
         status: "OK",
         message: "SUCCESS",
-        data: updateUser,
+        data: updatedUser,
       });
     } catch (e) {
       reject(e);
@@ -134,7 +129,7 @@ const getAllUser = () => {
       const allUser = await User.find();
       resolve({
         status: "OK",
-        message: "Success",
+        message: "SUCCESS",
         data: allUser,
       });
     } catch (e) {
@@ -166,6 +161,15 @@ const getDetailsUser = (id) => {
   });
 };
 
+const logoutUser = () => {
+  return new Promise((resolve) => {
+    resolve({
+      status: "OK",
+      message: "Logout successfully",
+    });
+  });
+};
+
 module.exports = {
   createUser,
   loginUser,
@@ -173,4 +177,5 @@ module.exports = {
   deleteUser,
   getAllUser,
   getDetailsUser,
+  logoutUser,
 };

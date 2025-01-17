@@ -1,56 +1,84 @@
-import "./App.scss";
-import Header from "./components/Header";
-import Container from "react-bootstrap/Container";
-import { ToastContainer } from "react-toastify";
-import { Bounce } from "react-toastify";
-import { useEffect } from "react";
-import AppRoutes from "./routes/AppRoutes";
-import { useSelector, useDispatch } from "react-redux";
-import { handleRefresh } from "./redux/actions/userAction";
+import React, { Fragment, useEffect, useState } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { routes } from "./routes/index";
+import DefaultComponent from "./component/DefaultComponent/DefaultComponent";
+import { isJsonString } from "./utils";
+import { jwtDecode } from "jwt-decode";
+import * as UserService from "./services/UserService";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUser } from "./redux/slides/userSlide";
 import axios from "axios";
+import Loading from "./component/LoadingComponent/Loading";
 import { useQuery } from "@tanstack/react-query";
 function App() {
   const dispatch = useDispatch();
+  const [isPending, setIsPending] = useState(false);
+  const user = useSelector((state) => state.user);
 
   useEffect(() => {
-    if (localStorage.getItem("token")) {
-      dispatch(handleRefresh());
+    setIsPending(true);
+    const { storageData, decoded } = handleDecoded();
+    if (decoded?.id) {
+      handleGetDetailsUser(decoded?.id, storageData);
     }
+    setIsPending(false);
   }, []);
 
-  // useEffect(() => {
-  //   fetchApi();
-  // });
-
-  const fetchApi = async () => {
-    const res = await axios.get(`${process.env.REACT_API_URL}/product/get-all`);
+  const handleDecoded = () => {
+    let storageData = localStorage.getItem("access_token");
+    let decoded = {};
+    if (storageData && isJsonString(storageData)) {
+      storageData = JSON.parse(storageData);
+      decoded = jwtDecode(storageData);
+    }
+    return { decoded, storageData };
   };
 
-  const query = useQuery({ queryKey: ["todos"], queryFn: fetchApi });
+  UserService.axiosJWT.interceptors.request.use(
+    async (config) => {
+      const currentTime = new Date();
+      const { decoded } = handleDecoded();
+      if (decoded?.exp < currentTime.getTime() / 1000) {
+        const data = await UserService.refreshToken();
+        config.headers["token"] = `Bearer ${data?.access_token}`;
+      }
+      return config;
+    },
+    (err) => {
+      return Promise.reject(err);
+    }
+  );
+
+  const handleGetDetailsUser = async (id, token) => {
+    const res = await UserService.getDetailsUser(id, token);
+    dispatch(updateUser({ ...res?.data, access_token: token }));
+  };
 
   return (
-    <>
-      <div className="app-container">
-        <Header />
-        <Container>
-          <AppRoutes />
-        </Container>
-      </div>
-
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
-    </>
+    <div>
+      <Loading isPending={isPending} style={{ background: "#ccc" }}>
+        <Router>
+          <Routes>
+            {routes.map((route) => {
+              const Page = route.page;
+              const isCheckAuth = !route.isPrivate || user.isAdmin;
+              const Layout = route.isShowHeader ? DefaultComponent : Fragment;
+              return (
+                <Route
+                  key={route.path}
+                  path={isCheckAuth ? route.path : undefined}
+                  element={
+                    <Layout>
+                      <Page />
+                    </Layout>
+                  }
+                />
+              );
+            })}
+          </Routes>
+        </Router>
+      </Loading>
+    </div>
   );
 }
 

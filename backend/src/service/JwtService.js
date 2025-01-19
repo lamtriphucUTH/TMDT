@@ -1,26 +1,31 @@
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config();
-const generalAccessToken = async (payload) => {
+
+const generalAccessToken = (payload) => {
   const access_token = jwt.sign(
     {
-      payload,
+      ...payload,
     },
     process.env.ACCESS_TOKEN,
-    { expiresIn: "30s" }
+    {
+      expiresIn: "30s",
+    }
   );
   return access_token;
 };
 
-const generalRefreshToken = async (payload) => {
-  const access_token = jwt.sign(
+const generalRefreshToken = (payload) => {
+  const refresh_token = jwt.sign(
     {
-      payload,
+      ...payload,
     },
     process.env.REFRESH_TOKEN,
-    { expiresIn: "365d" }
+    {
+      expiresIn: "356d",
+    }
   );
-  return access_token;
+  return refresh_token;
 };
 
 const refreshTokenJwtService = (token) => {
@@ -29,27 +34,26 @@ const refreshTokenJwtService = (token) => {
       jwt.verify(token, process.env.REFRESH_TOKEN, async (err, user) => {
         if (err) {
           resolve({
-            status: "ERROR",
+            status: "ERR",
             message: "The authentication",
           });
         }
-        const { payload } = user;
         const access_token = await generalAccessToken({
-          id: payload?.id,
-          isAdmin: payload?.isAdmin,
+          id: user?.id,
+          isAdmin: user?.isAdmin,
         });
-      });
-
-      resolve({
-        status: "OK",
-        message: "SUCCESS",
-        access_token,
+        resolve({
+          status: "OK",
+          message: "SUCCESS",
+          access_token,
+        });
       });
     } catch (e) {
       reject(e);
     }
   });
 };
+
 module.exports = {
   generalAccessToken,
   generalRefreshToken,

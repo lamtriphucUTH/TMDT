@@ -1,31 +1,23 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "react-toastify/dist/ReactToastify.css";
-import "@fortawesome/fontawesome-free/css/all.min.css";
-import { BrowserRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import store from "./redux/store";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import { store } from "./redux/store";
 import { Provider } from "react-redux";
-import ErrorBoundary from "./components/ErrorBoundaries/error";
-import { QueryClient, QueryClientProvider } from "react-query";
-
 const root = ReactDOM.createRoot(document.getElementById("root"));
-
 const queryClient = new QueryClient();
 root.render(
+  // <React.StrictMode>
   <QueryClientProvider client={queryClient}>
     <Provider store={store}>
-      <React.StrictMode>
-        <BrowserRouter>
-          <ErrorBoundary>
-            <App />
-          </ErrorBoundary>
-        </BrowserRouter>
-      </React.StrictMode>
+      <App />
     </Provider>
     <ReactQueryDevtools initialIsOpen={false} />
   </QueryClientProvider>
+  // </React.StrictMode>
 );
-export default root;
+
+reportWebVitals();
